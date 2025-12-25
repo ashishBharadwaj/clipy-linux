@@ -1,4 +1,4 @@
-package com.clipy.linux;
+package com.clipy.linux.model;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.clipy.linux;
+package com.clipy.linux.model;
 
 public class PreferencesModel {
     public int maxHistory;

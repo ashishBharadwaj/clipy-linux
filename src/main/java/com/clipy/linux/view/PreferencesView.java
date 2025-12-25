@@ -1,5 +1,6 @@
-package com.clipy.linux;
+package com.clipy.linux.view;
 
+import com.clipy.linux.model.PreferencesModel;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;

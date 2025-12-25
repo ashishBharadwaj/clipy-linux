@@ -1,4 +1,4 @@
-package com.clipy.linux;
+package com.clipy.linux.controller;
 
 import java.awt.*;
 import java.awt.event.MouseAdapter;

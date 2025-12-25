@@ -1,5 +1,6 @@
-package com.clipy.linux;
+package com.clipy.linux.view;
 
+import com.clipy.linux.ClipboardService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

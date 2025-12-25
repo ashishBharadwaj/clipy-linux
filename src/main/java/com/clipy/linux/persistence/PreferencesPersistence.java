@@ -1,5 +1,6 @@
-package com.clipy.linux;
+package com.clipy.linux.persistence;
 
+import com.clipy.linux.model.PreferencesModel;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 

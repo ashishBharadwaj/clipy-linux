@@ -1,5 +1,11 @@
 package com.clipy.linux;
 
+import com.clipy.linux.controller.TrayController;
+import com.clipy.linux.model.PreferencesModel;
+import com.clipy.linux.persistence.JsonPersistence;
+import com.clipy.linux.persistence.PreferencesPersistence;
+import com.clipy.linux.view.HistoryView;
+import com.clipy.linux.view.PreferencesView;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
