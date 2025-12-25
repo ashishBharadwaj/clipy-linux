@@ -24,6 +24,7 @@ import java.util.List;
 public class HistoryView {
 
     private final ClipboardService clipboardService;
+
     private Stage stage;
     private ListView<String> listView;
     private TextField searchField;
@@ -34,7 +35,7 @@ public class HistoryView {
     }
 
     public void init(Stage owner) {
-        stage = new Stage(StageStyle.UTILITY);
+        stage = new Stage(StageStyle.DECORATED);
         stage.initOwner(owner);
         stage.initModality(Modality.NONE);
         stage.setTitle("Clipboard History");
@@ -92,16 +93,16 @@ public class HistoryView {
         });
 
         Label hint = new Label("Type to filter, Enter to select, Esc to close.");
-        hint.setPadding(new Insets(2, 0, 4, 0));
+        hint.setPadding(new Insets(4, 0, 6, 0));
 
-        VBox topBox = new VBox(4, searchField, hint);
-        topBox.setPadding(new Insets(5));
+        VBox topBox = new VBox(6, searchField, hint);
+        topBox.setPadding(new Insets(10));
 
         BorderPane root = new BorderPane();
         root.setTop(topBox);
         root.setCenter(listView);
 
-        Scene scene = new Scene(root, 600, 350);
+        Scene scene = new Scene(root, 900, 550);
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ESCAPE) {
                 hide();
@@ -109,6 +110,8 @@ public class HistoryView {
         });
 
         stage.setScene(scene);
+        stage.setMinWidth(800);
+        stage.setMinHeight(450);
 
         stage.focusedProperty().addListener((obs, oldV, newV) -> {
             if (newV) {
@@ -135,7 +138,7 @@ public class HistoryView {
     public void showAt(double screenX, double screenY) {
         Platform.runLater(() -> {
             refreshItems();
-            stage.setX(screenX - 300); // half width to the left
+            stage.setX(screenX - 450); // half width to the left
             stage.setY(screenY + 10);  // just below cursor
             stage.show();
             stage.toFront();

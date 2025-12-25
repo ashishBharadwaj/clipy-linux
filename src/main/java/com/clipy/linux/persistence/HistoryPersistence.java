@@ -12,12 +12,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JsonPersistence {
+public class HistoryPersistence {
 
     private final Path historyFile;
     private final Gson gson;
 
-    public JsonPersistence() {
+    public HistoryPersistence() {
         String home = System.getProperty("user.home");
         Path configDir = Path.of(home, ".config", "clipy-linux");
         try {

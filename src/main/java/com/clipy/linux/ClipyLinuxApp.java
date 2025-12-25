@@ -2,77 +2,52 @@ package com.clipy.linux;
 
 import com.clipy.linux.controller.TrayController;
 import com.clipy.linux.model.PreferencesModel;
-import com.clipy.linux.persistence.JsonPersistence;
+import com.clipy.linux.model.SnippetsModel;
+import com.clipy.linux.persistence.HistoryPersistence;
 import com.clipy.linux.persistence.PreferencesPersistence;
 import com.clipy.linux.view.HistoryView;
 import com.clipy.linux.view.PreferencesView;
+import com.clipy.linux.view.SnippetsView;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-
-import java.awt.MouseInfo;
-import java.awt.Point;
-import java.awt.PointerInfo;
 
 public class ClipyLinuxApp extends Application {
 
     private ClipboardService clipboardService;
     private HistoryView historyView;
-    private JsonPersistence jsonPersistence;
+    private HistoryPersistence historyPersistence;
     private PreferencesPersistence prefsPersistence;
     private PreferencesModel preferences;
     private Stage primaryStage;
+
+    private SnippetsModel snippetsModel;
+    private SnippetsView snippetsView;
 
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
 
-        jsonPersistence = new JsonPersistence();
+        historyPersistence = new HistoryPersistence();
         prefsPersistence = new PreferencesPersistence();
         preferences = prefsPersistence.load();
 
         clipboardService = new ClipboardService(preferences.maxHistory);
-        var loaded = jsonPersistence.loadHistory();
+        var loaded = historyPersistence.loadHistory();
         clipboardService.loadFrom(loaded);
         clipboardService.start();
 
+        // shared snippets model + window
+        snippetsModel = new SnippetsModel();
+        snippetsView = new SnippetsView(snippetsModel);
+        snippetsView.init(primaryStage);
+
+        // history window (shown centered when requested)
         historyView = new HistoryView(clipboardService);
         historyView.init(primaryStage);
 
-        Label label = new Label(
-                "Clipy Linux - Clipboard watcher running.\n" +
-                        "Copy some text in any app.\n" +
-                        "Press Ctrl+H here or use the tray menu."
-        );
+        Platform.setImplicitExit(false); // keep app alive with only tray [web:448]
 
-        StackPane root = new StackPane(label);
-        Scene scene = new Scene(root, 520, 260);
-
-        KeyCombination showHistoryCombo = new KeyCodeCombination(
-                javafx.scene.input.KeyCode.H,
-                KeyCombination.CONTROL_DOWN
-        );
-        scene.setOnKeyPressed(e -> {
-            if (showHistoryCombo.match(e)) {
-                historyView.show(); // centered when from main window
-            }
-        });
-
-        primaryStage.setTitle("Clipy Linux (Prototype)");
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-        primaryStage.setOnCloseRequest(e -> {
-            saveHistory();
-            savePreferences();
-        });
-
-        Platform.setImplicitExit(false);
         setupTray();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -84,12 +59,13 @@ public class ClipyLinuxApp extends Application {
     private void setupTray() {
         try {
             TrayController trayController = new TrayController(
-                    this::showMainWindow,
-                    this::showHistoryWindow,      // from tray, uses mouse position
+                    this::showHistoryWindow,
                     this::showPreferencesWindow,
+                    () -> Platform.runLater(snippetsView::show),
                     text -> clipboardService.setClipboardText(text),
                     max -> clipboardService.getRecent(max),
-                    () -> preferences.maxTrayItems
+                    () -> preferences.maxTrayItems,
+                    snippetsModel
             );
             trayController.init();
         } catch (Exception e) {
@@ -97,29 +73,9 @@ public class ClipyLinuxApp extends Application {
         }
     }
 
-    private void showMainWindow() {
-        Platform.runLater(() -> {
-            primaryStage.show();
-            primaryStage.toFront();
-        });
-    }
-
-    // Called from tray: position near mouse
+    // Open history window centered (same style as Edit Snippets)
     private void showHistoryWindow() {
-        Platform.runLater(() -> {
-            try {
-                PointerInfo pi = MouseInfo.getPointerInfo(); // AWT mouse info[web:242][web:244][web:246]
-                if (pi != null) {
-                    Point p = pi.getLocation();
-                    historyView.showAt(p.getX(), p.getY());
-                } else {
-                    historyView.show(); // fallback
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                historyView.show(); // fallback
-            }
-        });
+        Platform.runLater(historyView::show);
     }
 
     private void showPreferencesWindow() {
@@ -134,9 +90,9 @@ public class ClipyLinuxApp extends Application {
     }
 
     private void saveHistory() {
-        if (jsonPersistence != null && clipboardService != null) {
+        if (historyPersistence != null && clipboardService != null) {
             var list = clipboardService.snapshot();
-            jsonPersistence.saveHistory(list);
+            historyPersistence.saveHistory(list);
         }
     }
 
