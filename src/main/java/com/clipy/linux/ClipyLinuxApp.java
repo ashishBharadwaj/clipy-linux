@@ -23,6 +23,7 @@ public class ClipyLinuxApp extends Application {
 
     private SnippetsModel snippetsModel;
     private SnippetsView snippetsView;
+    private PreferencesView preferencesView;
 
     @Override
     public void start(Stage primaryStage) {
@@ -42,12 +43,17 @@ public class ClipyLinuxApp extends Application {
         snippetsView = new SnippetsView(snippetsModel);
         snippetsView.init(primaryStage);
 
-        // history window (shown centered when requested)
+        // history window
         historyView = new HistoryView(clipboardService);
         historyView.init(primaryStage);
 
-        Platform.setImplicitExit(false); // keep app alive with only tray [web:448]
+        // single PreferencesView editing the shared preferences instance
+        preferencesView = new PreferencesView(primaryStage, preferences, updatedPrefs -> {
+            // updatedPrefs == preferences (same instance), but keep this in sync explicitly
+            this.preferences = updatedPrefs;
+        });
 
+        Platform.setImplicitExit(false);
         setupTray();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -73,19 +79,18 @@ public class ClipyLinuxApp extends Application {
         }
     }
 
-    // Open history window centered (same style as Edit Snippets)
     private void showHistoryWindow() {
         Platform.runLater(historyView::show);
     }
 
     private void showPreferencesWindow() {
         Platform.runLater(() -> {
-            PreferencesView view = new PreferencesView(primaryStage, preferences, newPrefs -> {
-                this.preferences = newPrefs;
-                clipboardService.setMaxItems(newPrefs.maxHistory);
-                savePreferences();
-            });
-            view.show();
+            // Blocks until user closes the dialog (showAndWait inside)
+            preferencesView.show();
+
+            // After user hit Save, preferences object has been mutated
+            clipboardService.setMaxItems(preferences.maxHistory);
+            savePreferences();
         });
     }
 

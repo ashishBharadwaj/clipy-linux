@@ -18,19 +18,19 @@ import java.util.function.UnaryOperator;
 public class PreferencesView {
 
     public interface Listener {
-        void onPreferencesChanged(PreferencesModel newPrefs);
+        void onPreferencesChanged(PreferencesModel updatedPrefs);
     }
 
     private final Stage stage;
     private final TextField maxHistoryField;
     private final TextField maxTrayField;
     private final CheckBox plainTextCheck;
-    private PreferencesModel current;
+    private final PreferencesModel current;
     private final Listener listener;
 
-    public PreferencesView(Stage owner, PreferencesModel initial, Listener listener) {
+    public PreferencesView(Stage owner, PreferencesModel prefs, Listener listener) {
         this.listener = listener;
-        this.current = initial;
+        this.current = prefs; // mutate this instance directly
 
         stage = new Stage(StageStyle.UTILITY);
         stage.initOwner(owner);
@@ -38,29 +38,29 @@ public class PreferencesView {
         stage.setTitle("Preferences");
 
         Label maxHistoryLabel = new Label("Max history items:");
-        maxHistoryField = createNumericField(10, 1000, initial.maxHistory);
+        maxHistoryField = createNumericField(10, 100000, prefs.maxHistory);
 
         Label maxTrayLabel = new Label("Max tray items:");
-        maxTrayField = createNumericField(3, 30, initial.maxTrayItems);
+        maxTrayField = createNumericField(3, 1000, prefs.maxTrayItems);
 
         plainTextCheck = new CheckBox("Plain text only");
-        plainTextCheck.setSelected(initial.plainTextOnly);
+        plainTextCheck.setSelected(prefs.plainTextOnly);
 
         Button saveBtn = new Button("Save");
         Button cancelBtn = new Button("Cancel");
 
         saveBtn.setOnAction(e -> {
-            int maxHistory = parseOrClamp(maxHistoryField.getText(), 10, 1000);
-            int maxTray = parseOrClamp(maxTrayField.getText(), 3, 30);
+            int maxHistory = parseOrClamp(maxHistoryField.getText(), 10, 100000);
+            int maxTray = parseOrClamp(maxTrayField.getText(), 3, 1000);
+            boolean plainOnly = plainTextCheck.isSelected();
 
-            PreferencesModel updated = new PreferencesModel(
-                    maxHistory,
-                    maxTray,
-                    plainTextCheck.isSelected()
-            );
-            this.current = updated;
+            // mutate existing model
+            current.maxHistory = maxHistory;
+            current.maxTrayItems = maxTray;
+            current.plainTextOnly = plainOnly;
+
             if (listener != null) {
-                listener.onPreferencesChanged(updated);
+                listener.onPreferencesChanged(current);
             }
             stage.close();
         });
@@ -90,15 +90,14 @@ public class PreferencesView {
         UnaryOperator<TextFormatter.Change> filter = change -> {
             String newText = change.getControlNewText();
             if (newText.isEmpty()) {
-                return change; // allow empty, will clamp on save
+                return change;
             }
             if (!newText.matches("\\d+")) {
-                return null;  // reject non-digits
+                return null;
             }
             try {
                 int val = Integer.parseInt(newText);
                 if (val < min || val > max) {
-                    // allow typing; clamp on save instead of blocking
                     return change;
                 }
             } catch (NumberFormatException e) {
